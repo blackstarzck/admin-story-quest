@@ -8,14 +8,14 @@ import { SkeletonUtils } from 'three-stdlib'
 import type { PlacedModel, Asset } from '../types/database'
 
 // GLB Model Loader Component with Animation Support
-function GLBModel({ 
-  url, 
+function GLBModel({
+  url,
   position = [0, 0, 0],
   rotation = [0, 0, 0],
   scale = [1, 1, 1],
   isSelected = false,
   onClick
-}: { 
+}: {
   url: string
   position?: [number, number, number]
   rotation?: [number, number, number]
@@ -25,16 +25,16 @@ function GLBModel({
 }) {
   const groupRef = useRef<THREE.Group>(null!)
   const { scene, animations } = useGLTF(url)
-  
+
   // Clone the scene properly to preserve skeleton bindings for animations
   const clonedScene = useMemo(() => SkeletonUtils.clone(scene), [scene])
-  
+
   // useAnimations needs the cloned scene and the group ref
   const { actions, names } = useAnimations(animations, groupRef)
-  
-  const { 
+
+  const {
     animationState,
-    setAvailableAnimations, 
+    setAvailableAnimations,
     setCurrentAnimation,
     resetAnimationState
   } = useAppStore()
@@ -51,7 +51,7 @@ function GLBModel({
     } else {
       resetAnimationState()
     }
-    
+
     return () => {
       // Stop all animations on unmount
       Object.values(actions).forEach(action => action?.stop())
@@ -89,7 +89,7 @@ function GLBModel({
       action.fadeIn(0.2)
       action.play()
     }
-    
+
     // Apply pause state
     action.paused = !animationState.isPlaying
 
@@ -112,8 +112,8 @@ function GLBModel({
   }, [clonedScene])
 
   return (
-    <group 
-      ref={groupRef} 
+    <group
+      ref={groupRef}
       position={position}
       rotation={rotation}
       scale={scale}
@@ -136,7 +136,7 @@ function GLBModel({
 // Fallback Model (when GLB fails to load)
 function FallbackModel({ category }: { category: string }) {
   const meshRef = useRef<THREE.Mesh>(null)
-  
+
   useFrame((_, delta) => {
     if (meshRef.current) {
       meshRef.current.rotation.y += delta * 0.3
@@ -168,10 +168,10 @@ function FallbackModel({ category }: { category: string }) {
   return (
     <mesh ref={meshRef} position={[0, 0.5, 0]} castShadow>
       {getGeometry()}
-      <meshStandardMaterial 
-        color={getColor()} 
-        metalness={0.3} 
-        roughness={0.6} 
+      <meshStandardMaterial
+        color={getColor()}
+        metalness={0.3}
+        roughness={0.6}
         emissive={getColor()}
         emissiveIntensity={0.1}
       />
@@ -180,15 +180,15 @@ function FallbackModel({ category }: { category: string }) {
 }
 
 // Model Wrapper with Error Boundary
-function ModelLoader({ 
-  url, 
+function ModelLoader({
+  url,
   category,
   position,
   rotation,
   scale,
   isSelected,
   onClick
-}: { 
+}: {
   url: string
   category: string
   position?: [number, number, number]
@@ -212,8 +212,8 @@ function ModelLoader({
   return (
     <Suspense fallback={<LoadingIndicator />}>
       <ErrorBoundary onError={() => setHasError(true)} key={key}>
-        <GLBModel 
-          url={url} 
+        <GLBModel
+          url={url}
           position={position}
           rotation={rotation}
           scale={scale}
@@ -243,7 +243,7 @@ function ErrorBoundary({ children, onError }: { children: React.ReactNode; onErr
 // Loading Indicator
 function LoadingIndicator() {
   const meshRef = useRef<THREE.Mesh>(null)
-  
+
   useFrame((_, delta) => {
     if (meshRef.current) {
       meshRef.current.rotation.x += delta * 2
@@ -283,17 +283,17 @@ function EmptyScene() {
 }
 
 // Trigger Radius Circle
-function TriggerRadiusCircle({ 
-  radius, 
+function TriggerRadiusCircle({
+  radius,
   position,
   isSelected
-}: { 
+}: {
   radius: number
   position: [number, number, number]
   isSelected: boolean
 }) {
   const ref = useRef<THREE.Mesh>(null)
-  
+
   useFrame((_, delta) => {
     if (ref.current && isSelected) {
       ref.current.rotation.z += delta * 0.5
@@ -301,15 +301,15 @@ function TriggerRadiusCircle({
   })
 
   return (
-    <mesh 
+    <mesh
       ref={ref}
-      position={[position[0], 0.01, position[2]]} 
+      position={[position[0], 0.01, position[2]]}
       rotation={[-Math.PI / 2, 0, 0]}
     >
       <ringGeometry args={[radius - 0.05, radius, 32]} />
-      <meshBasicMaterial 
-        color={isSelected ? '#7c3aed' : '#3b82f6'} 
-        transparent 
+      <meshBasicMaterial
+        color={isSelected ? '#7c3aed' : '#3b82f6'}
+        transparent
         opacity={isSelected ? 0.5 : 0.3}
         side={THREE.DoubleSide}
       />
@@ -318,13 +318,13 @@ function TriggerRadiusCircle({
 }
 
 // Placed Model Renderer
-function PlacedModelRenderer({ 
-  model, 
+function PlacedModelRenderer({
+  model,
   asset,
   isSelected,
   onClick,
   onTransformChange
-}: { 
+}: {
   model: PlacedModel
   asset: Asset | undefined
   isSelected: boolean
@@ -362,10 +362,10 @@ function PlacedModelRenderer({
         isSelected={isSelected}
         onClick={onClick}
       />
-      
+
       {/* Trigger radius visualization */}
-      <TriggerRadiusCircle 
-        radius={model.trigger_radius} 
+      <TriggerRadiusCircle
+        radius={model.trigger_radius}
         position={isSelected ? [0, 0, 0] : position}
         isSelected={isSelected}
       />
@@ -398,26 +398,26 @@ function PlacedModelRenderer({
         onDragEnd={() => {
           // Force update to save final position
         }}
-        onDrag={(l, dl, w, dw) => {
+        onDrag={(_l, _dl, w, _dw) => {
           const newPos = new THREE.Vector3()
           const newRot = new THREE.Quaternion()
           const newScale = new THREE.Vector3()
           w.decompose(newPos, newRot, newScale)
-          
+
           const euler = new THREE.Euler().setFromQuaternion(newRot)
-          
+
           onTransformChange('position_x', newPos.x)
           onTransformChange('position_y', newPos.y)
           onTransformChange('position_z', newPos.z)
-          
+
           onTransformChange('rotation_x', euler.x)
           onTransformChange('rotation_y', euler.y)
           onTransformChange('rotation_z', euler.z)
         }}
       >
         {/* We wrap the model in a group at the original position so PivotControls can control it */}
-        <group position={position} rotation={rotation} scale={[1,1,1]}>
-           {Model}
+        <group position={position} rotation={rotation} scale={[1, 1, 1]}>
+          {Model}
         </group>
       </PivotControls>
     )
@@ -458,7 +458,7 @@ function DropZone() {
 
       const raycaster = new THREE.Raycaster()
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera)
-      
+
       const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
       const intersection = new THREE.Vector3()
       raycaster.ray.intersectPlane(plane, intersection)
@@ -484,21 +484,21 @@ function DropZone() {
 
 // Scene Content
 function SceneContent() {
-  const { 
-    selectedAsset, 
+  const {
+    selectedAsset,
     selectedChapter,
     selectedPlacedModel,
     setSelectedPlacedModel,
     assets,
     updatePlacedModel
   } = useAppStore()
-  
+
   const { placedModels } = usePlacedModels(selectedChapter?.id)
 
   const handleTransformChange = (modelId: string) => (field: keyof PlacedModel, value: any) => {
     // Update local state immediately for smooth dragging
     updatePlacedModel(modelId, { [field]: value })
-    
+
     // In a real app, we would save to DB here (debounced)
     if (selectedPlacedModel?.id === modelId) {
       setSelectedPlacedModel({ ...selectedPlacedModel, [field]: value })
@@ -517,29 +517,29 @@ function SceneContent() {
         position={[8, 8, 8]}
         fov={60}
       />
-      
-      <OrbitControls 
+
+      <OrbitControls
         target={[0, 0, 0]}
         enableDamping
         dampingFactor={0.05}
         minDistance={2}
         maxDistance={30}
       />
-      
+
       {/* Lighting */}
       <ambientLight intensity={0.6} />
-      <directionalLight 
-        position={[5, 10, 5]} 
-        intensity={1.2} 
+      <directionalLight
+        position={[5, 10, 5]}
+        intensity={1.2}
         castShadow
         shadow-mapSize={[1024, 1024]}
       />
-      <directionalLight 
-        position={[-5, 5, -5]} 
-        intensity={0.5} 
+      <directionalLight
+        position={[-5, 5, -5]}
+        intensity={0.5}
       />
       <pointLight position={[0, 5, 0]} intensity={0.3} color="#7c3aed" />
-      
+
       {/* Ground Grid */}
       <Grid
         position={[0, -0.01, 0]}
@@ -555,7 +555,7 @@ function SceneContent() {
         followCamera={false}
         infiniteGrid
       />
-      
+
       {/* Ground Plane for shadows */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <planeGeometry args={[50, 50]} />
@@ -564,16 +564,16 @@ function SceneContent() {
 
       {/* Drop Zone Handler */}
       <DropZone />
-      
+
       {/* Content */}
       {selectedChapter ? (
         <>
           {/* Environment Asset (floor plan) */}
           {environmentAsset && (
             <Center position={[0, 0, 0]}>
-              <ModelLoader 
-                url={environmentAsset.storage_url} 
-                category={environmentAsset.category} 
+              <ModelLoader
+                url={environmentAsset.storage_url}
+                category={environmentAsset.category}
               />
             </Center>
           )}
@@ -614,12 +614,12 @@ function formatAnimationName(name: string): string {
     .replace(/_/g, ' ')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .trim()
-  
+
   cleaned = cleaned
     .split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ')
-  
+
   const nameMap: Record<string, string> = {
     'Run': '🏃 달리기 (Run)',
     'Running': '🏃 달리기 (Running)',
@@ -642,24 +642,24 @@ function formatAnimationName(name: string): string {
     'Fly': '🦅 비행 (Fly)',
     'Climb': '🧗 오르기 (Climb)',
   }
-  
+
   for (const [key, value] of Object.entries(nameMap)) {
     if (cleaned.toLowerCase().includes(key.toLowerCase())) {
       return value
     }
   }
-  
+
   return cleaned
 }
 
 // Animation Controls Component
 function AnimationControls() {
-  const { 
-    animationState, 
-    setCurrentAnimation, 
-    setIsPlaying, 
+  const {
+    animationState,
+    setCurrentAnimation,
+    setIsPlaying,
     setAnimationSpeed,
-    setAnimationLoop 
+    setAnimationLoop
   } = useAppStore()
 
   if (animationState.availableAnimations.length === 0) {
@@ -683,7 +683,7 @@ function AnimationControls() {
           ))}
         </select>
       </div>
-      
+
       {/* Playback Controls */}
       <div className="animation-controls-row">
         <button
@@ -693,7 +693,7 @@ function AnimationControls() {
         >
           {animationState.isPlaying ? '⏸️' : '▶️'}
         </button>
-        
+
         <button
           className={`animation-btn ${animationState.loop ? 'active' : ''}`}
           onClick={() => setAnimationLoop(!animationState.loop)}
@@ -701,7 +701,7 @@ function AnimationControls() {
         >
           🔁
         </button>
-        
+
         {/* Speed Control */}
         <div className="animation-speed">
           <span className="animation-speed-label">{animationState.speed.toFixed(1)}x</span>
@@ -717,7 +717,7 @@ function AnimationControls() {
           />
         </div>
       </div>
-      
+
       {/* Animation Info */}
       <div className="animation-info">
         <span className="animation-count">
@@ -753,8 +753,8 @@ export function PreviewCanvas() {
         }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
           <div>3D 미리보기를 사용할 수 없습니다</div>
-          <button 
-            className="btn btn-primary btn-sm" 
+          <button
+            className="btn btn-primary btn-sm"
             style={{ marginTop: '1rem' }}
             onClick={() => setCanvasError(false)}
           >
@@ -776,15 +776,15 @@ export function PreviewCanvas() {
           배치된 모델: {placedModels.length}개
         </div>
       </div>
-      
+
       {/* Animation Controls */}
       <AnimationControls />
-      
+
       {/* 3D Canvas */}
       <Canvas
         shadows
         dpr={[1, 2]}
-        gl={{ 
+        gl={{
           antialias: true,
           alpha: false,
           powerPreference: 'default'

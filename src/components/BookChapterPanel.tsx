@@ -1,16 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAppStore } from '../store/appStore'
 import { useBooks, useChapters, useAssets, usePlacedModels } from '../hooks/useSupabase'
-import type { Asset } from '../types/database'
-import { 
-  ChevronRight, 
-  ChevronDown, 
-  Book as BookIcon, 
-  FileText, 
-  Box, 
-  Layers, 
-  Map as MapIcon, 
-  Ghost,
+import {
+  ChevronRight,
+  ChevronDown,
+  Book as BookIcon,
+  Box,
+  Layers,
   RefreshCw,
   Search,
   AlertTriangle,
@@ -18,26 +14,25 @@ import {
 } from 'lucide-react'
 
 export default function BookChapterPanel() {
-  const { 
-    selectedBook, setSelectedBook, 
+  const {
+    selectedBook, setSelectedBook,
     selectedChapter, setSelectedChapter,
     selectedPlacedModel, setSelectedPlacedModel,
-    assets 
   } = useAppStore()
 
   const { books, loading: booksLoading } = useBooks()
   // Always fetch chapters for the selected book
-  const { chapters, loading: chaptersLoading, fetchChapters, modifyChapter } = useChapters(selectedBook?.id)
+  const { chapters, loading: chaptersLoading, fetchChapters } = useChapters(selectedBook?.id)
   // Always fetch placed models for the selected chapter
   const { placedModels, createPlacedModel } = usePlacedModels(selectedChapter?.id)
-  
+
   useAssets() // Ensure assets are loaded
-  
+
   // UI State
   const [expandedBooks, setExpandedBooks] = useState<Set<string>>(new Set())
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set())
   const [dragOverChapter, setDragOverChapter] = useState<string | null>(null)
-  
+
   // Track initialization
   const initialized = useRef(false)
 
@@ -110,11 +105,11 @@ export default function BookChapterPanel() {
   const handleDropOnChapter = async (e: React.DragEvent, chapterId: string) => {
     e.preventDefault()
     setDragOverChapter(null)
-    
+
     // Check model count limit (max 3)
     const chapter = chapters.find(c => c.id === chapterId)
     const currentCount = chapter?.placed_models_count || 0
-    
+
     if (currentCount >= 3) {
       alert('챕터당 최대 3개의 모델만 배치할 수 있습니다.')
       return
@@ -122,7 +117,7 @@ export default function BookChapterPanel() {
 
     const assetId = e.dataTransfer.getData('assetId')
     const assetName = e.dataTransfer.getData('assetName')
-    
+
     if (!assetId) return
 
     // Create placed model regardless of category
@@ -138,20 +133,15 @@ export default function BookChapterPanel() {
       is_active: true,
       sort_order: currentCount
     })
-    
+
     // Refresh chapters to update count
     fetchChapters()
-  }
-
-  const getEnvironmentAsset = (environmentAssetId: string | null): Asset | undefined => {
-    if (!environmentAssetId) return undefined
-    return assets.find(a => a.id === environmentAssetId)
   }
 
   // Handle adding model from PreviewCanvas drop
   const handleAddModelToChapter = async (assetId: string, assetName: string) => {
     if (!selectedChapter) return
-    
+
     // Check limit
     if (placedModels.length >= 3) {
       alert('챕터당 최대 3개의 모델만 배치할 수 있습니다.')
@@ -170,7 +160,7 @@ export default function BookChapterPanel() {
       is_active: true,
       sort_order: placedModels.length
     })
-    
+
     fetchChapters()
   }
 
@@ -184,14 +174,14 @@ export default function BookChapterPanel() {
 
   // -- RENDER HELPERS --
 
-  const TreeItem = ({ 
-    level, 
-    label, 
-    icon: Icon, 
-    isExpanded, 
-    onToggle, 
-    isSelected, 
-    onSelect, 
+  const TreeItem = ({
+    level,
+    label,
+    icon: Icon,
+    isExpanded,
+    onToggle,
+    isSelected,
+    onSelect,
     children,
     hasChildren = false,
     trailing,
@@ -199,19 +189,19 @@ export default function BookChapterPanel() {
     statusColor
   }: any) => (
     <div className="select-none">
-      <div 
+      <div
         onClick={onSelect}
         className={`
           flex items-center h-9 pr-3 cursor-pointer transition-colors border-l-2
-          ${isSelected 
-            ? 'bg-blue-500/20 border-blue-500 text-blue-100' 
+          ${isSelected
+            ? 'bg-blue-500/20 border-blue-500 text-blue-100'
             : 'border-transparent hover:bg-slate-800 text-slate-300 hover:text-white'
           }
           ${isDropTarget ? 'bg-green-500/20 border-green-500' : ''}
         `}
         style={{ paddingLeft: `${level * 12 + 4}px` }}
       >
-        <div 
+        <div
           onClick={hasChildren ? onToggle : undefined}
           className={`
             p-1 rounded hover:bg-white/10 mr-1
@@ -220,19 +210,19 @@ export default function BookChapterPanel() {
         >
           {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </div>
-        
+
         <div className="relative">
           <Icon size={16} className={`mr-2 ${isSelected ? 'text-blue-400' : 'text-slate-400'}`} />
           {statusColor && (
             <div className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#1e1e24] ${statusColor}`} />
           )}
         </div>
-        
+
         <span className="flex-1 text-sm truncate font-medium">{label}</span>
-        
+
         {trailing}
       </div>
-      
+
       {isExpanded && children}
     </div>
   )
@@ -249,9 +239,9 @@ export default function BookChapterPanel() {
           <button className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white" title="검색">
             <Search size={14} />
           </button>
-          <button 
+          <button
             onClick={() => fetchChapters()}
-            className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white" 
+            className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white"
             title="새로고침"
           >
             <RefreshCw size={14} />
@@ -305,11 +295,11 @@ export default function BookChapterPanel() {
                         const isSelected = selectedChapter?.id === chapter.id
                         const isChapterExpanded = expandedChapters.has(chapter.id)
                         const isDragOver = dragOverChapter === chapter.id
-                        
+
                         // Use real-time count if selected, otherwise use fetched count
                         const modelCount = isSelected ? placedModels.length : (chapter.placed_models_count || 0)
                         const hasModels = modelCount > 0
-                        
+
                         // Filter placed models for this chapter
                         const chapterModels = isSelected ? placedModels : []
 
@@ -339,8 +329,8 @@ export default function BookChapterPanel() {
                             }
                           >
                             {/* Drop Zone Listeners */}
-                            <div 
-                              className="hidden" 
+                            <div
+                              className="hidden"
                               onDragOver={(e) => handleDragOver(e, chapter.id)}
                               onDragLeave={handleDragLeave}
                               onDrop={(e) => handleDropOnChapter(e, chapter.id)}
